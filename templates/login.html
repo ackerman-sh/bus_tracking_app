@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login - Bus Tracking Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 400px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: #dc3545;
+            text-align: center;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 500px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Login to Bus Tracking Tool</h2>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label>Name:</label>
+                <input type="text" name="name" placeholder="Enter your name" required>
+            </div>
+            <div class="form-group">
+                <label>Mobile:</label>
+                <input type="text" name="mobile" placeholder="Enter your mobile number" required>
+            </div>
+            <div class="form-group">
+                <label>City:</label>
+                <input type="text" name="city" placeholder="Enter your city" required>
+            </div>
+            <div class="form-group">
+                <label>State:</label>
+                <input type="text" name="state" placeholder="Enter your state" required>
+            </div>
+            <div class="form-group">
+                <label>Country:</label>
+                <input type="text" name="country" placeholder="Enter your country" required>
+            </div>
+            <div class="form-group">
+                <label>Pincode:</label>
+                <input type="text" name="pincode" placeholder="Enter your pincode" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+</body>
+
+</html>

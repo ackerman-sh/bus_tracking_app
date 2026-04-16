@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - Bus Tracking Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            display: flex;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 200px;  /* Default width */
+            background-color: #343a40;
+            padding: 20px;
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            transition: width 0.3s ease-in-out; /* Smooth transition */
+        }
+        
+        .sidebar.closed {
+            width: 50px;  /* Small bar when closed */
+            padding: 10px; /* Adjust padding */
+            overflow: hidden; /* Hide text */
+        }
+        
+        .sidebar button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: 0.3s;
+        }
+
+        
+
+        .sidebar button:hover {
+            background-color: #0056b3;
+        }
+
+
+        .sidebar.closed button {
+            text-align: center;
+            font-size: 18px;
+            padding: 10px;
+        }
+
+        .sidebar button:hover {
+            background-color: #0056b3;
+        }
+
+        .main {
+            margin-left: 20%;
+            width: 70%;
+            padding: 20px;
+            transition: margin-left 0.6s ease-in-out;
+        }
+
+        .main.collapsed {
+            margin-left: 15%;
+        }
+
+        .panel {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .panel-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        input, button {
+            margin-top: 10px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+        }
+
+        button:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #map, #places-map, #track-map, #bus-stop-map{
+            height: 300px;
+            margin-top: 10px;
+            border-radius: 5px;
+            transition: height 0.4s ease-in-out;
+        }
+
+        .horizontal-panels {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .map-button1, .map-button2 {
+            position: absolute;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+            width: 100px;
+        }
+        .map-container {
+           position: relative;  
+           width: 100%;
+        }       
+
+        .map-button1:hover, .map-button2:hover {
+            background-color: #0056b3;
+        }
+
+
+
+                /* 📌 Large tablets (1024px and below) */
+        @media screen and (max-width: 1024px) {
+            .sidebar {
+                width: 180px;  /* Adjust sidebar width */
+                padding: 15px;
+            }
+        
+            .main {
+                margin-left: 190px;
+                width: calc(100% - 190px);
+            }
+        }
+
+        /* 📌 Tablets & small laptops (768px and below) */
+        @media screen and (max-width: 768px) {
+            /* Convert sidebar into a top menu */
+            .sidebar {
+                position: fixed;
+                width: 100%;
+                height: auto;
+                top: 0;
+                left: 0;
+                padding: 10px 0;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                z-index: 1000;
+                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            }
+        
+            .sidebar button {
+                flex: 1;
+                font-size: 14px;
+                text-align: center;
+                margin: 0;
+                padding: 12px;
+            }
+        
+            /* Adjust main content below sidebar */
+            .main {
+                margin-left: 0;
+                padding-top: 60px;
+                width: 100%;
+            }
+        
+            /* Stack buttons for better mobile usability */
+            .horizontal-panels {
+                flex-direction: column;
+                align-items: center;
+            }
+        
+            .horizontal-panels button {
+                width: 90%;
+                font-size: 14px;
+            }
+        
+            /* Map size adjustments */
+            #map, #places-map {
+                height: 250px;
+            }
+        
+            /* Adjust buttons inside the map */
+            .map-button1, .map-button2 {
+                width: 90px;
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+
+        /* 📌 Mobile Phones (480px and below) */
+        @media screen and (max-width: 480px) {
+            /* Sidebar becomes a floating menu button */
+            .sidebar {
+                flex-direction: column;
+                align-items: center;
+            }
+        
+            .sidebar button {
+                font-size: 12px;
+                padding: 8px;
+            }
+        
+            .main {
+                padding-top: 80px;
+            }
+        
+            /* Make buttons bigger for easy tapping */
+            .horizontal-panels button {
+                width: 95%;
+                font-size: 12px;
+            }
+        
+            /* Adjust map height */
+            #map, #places-map {
+                height: 200px;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <button onclick="toggleSidebar()">☰ Menu</button> 
+    <button onclick="showPanel('home-panel')">🏠 Home</button>
+    <button onclick="showPanel('service-panel')">🚌 Service</button>
+    <a href="{{ url_for('logout') }}"><button class="logout">🚪 Logout</button></a>
+</div>
+
+<div class="main" id="main">
+
+    <div id="home-panel" class="panel active">
+        <div class="panel-content">
+            <h2>[ Home ]</h2>
+            <p><b>Welcome, {{ user_info.name }}!</b></p>
+            <p>Track buses in real-time and plan your journey with ease.</p>
+        </div>
+    </div>
+
+    <div id="service-panel" class="panel">
+        <div class="panel-content">
+            <h2>[ Service Panel ]</h2>
+            <p>Enter your source and destination or use your live location:</p>
+            <form id="locationForm">
+
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="source" spellcheck="false" placeholder="Input source" required readonly>
+                    <button type="button" onclick="getLiveLocation()">📍 Click to Use Current Location</button>
+                    <button type="button" onclick="openMapForSource()">📍 Select on Map</button>
+                </div><br>
+
+                <label>Destination:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="destination" spellcheck="false" placeholder="Input destination" required readonly>
+                    <button type="button" onclick="openMapForDestination()">📍 Select on Map</button>
+                </div><br>
+
+                <button type="button" onclick="FindRoute()">Find Route</button>
+            </form>
+
+             <div class="map-container">
+                <button class="map-button1" onclick="toggleMap()">🔍 Expand</button>
+                <div id="map"></div>
+                <div id="routeDetails" style="margin-top: 10px;"></div>
+             </div>
+
+             <br><br>
+
+            <div class="horizontal-panels">
+                 <button  onclick="toggleNestedPanel('bus-stop-panel')">🚌 Nearby Bus Stops</button>
+                 <button  onclick="toggleNestedPanel('track-bus-panel')">🚏 Track Bus</button>
+                 <button  onclick="toggleNestedPanel('place-hotel-panel')">🏨 Places & Hotels</button>
+            </div>
+
+            <br><br>
+            <div id="bus-stop-panel" class="panel">
+                <h2>[ Bus Stops ]</h2>
+                <p>Select the distance (in km) from the dropdown to check for nearby bus stops.</p>
+                <select id="circumstance-dropdown">
+                    <option value="1">1 km</option>
+                    <option value="3">3 km</option>
+                    <option value="5">5 km</option>
+                    <option value="10">10 km</option>
+                </select>
+                <button onclick="searchBusStop()">🚌 Show Bus stops near me</button>
+                <br><br>
+                <div id="bus-stop-results-status"></div><br>
+                
+                <div class="map-container">
+                    <div id="bus-stop-map"></div>
+                </div>
+            
+                <h3>[ Bus Schedule ]</h3>
+                <label>Select a bus stop to view arrival & departure times:</label>
+                <select id="bus-stop-dropdown"></select>
+                <button onclick="fetchBusTimings()">📅 Fetch Timings</button>
+                <br><br>
+                <div id="bus-schedule-display"></div>
+            </div>
+
+            <div id="track-bus-panel" class="panel">
+                <div class="panel-content">
+                    <h2>[ Track Bus ]</h2>
+                    <p>Input the Bus id to track:</p>
+                    <div style="display: flex; gap: 10px;">
+                    <input type="text" spellcheck="false" placeholder="i.e C/80" required>
+                    <button type="button" id="startTracking" onclick="startTracking()">Track Now</button>
+                    <button type="button" id="stopTracking" onclick="stopTracking()" style="display: none;">Stop Tracking</button>
+                    </div>
+                    <div class="map-container">
+                        <div id="track-map"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="place-hotel-panel" class="panel">
+                <div class="panel-content">
+                    <h2>[ Places & Hotels ]</h2>
+                    <p>Select a Category to find places and hotels:</p>
+
+                    <select id="category-dropdown">
+                        <option value="">-- Select Category --</option> 
+                    </select>
+                    <p>Select the distance (in km) from the dropdown to check for nearby places.</p>
+                    <select id="radius-dropdown">
+                        <option value="1">1 km</option>
+                        <option value="3">3 km</option>
+                        <option value="5">5 km</option>
+                        <option value="10">10 km</option>
+                    </select>
+
+                    <button onclick="findNearbyPlaces()">📍Search Places Near You</button>
+
+                    <div id="places-results"></div>
+
+                    <div class="map-container">
+                        <button class="map-button2" onclick="togglePlaceMap()">🔍 Expand</button>
+                        <div id="places-map"></div>
+                     </div>
+                </div>
+            </div>
+
+        </div>
+        <div style="margin-top: 300px;"></div>
+    </div>
+
+    <script>
+        
+        var map, placesMap, trackMap, busMap;
+        var sourceMarker, destinationMarker;
+        var markers = [];
+        var trackBusMarker = null;
+        let isExpanded = false;
+        let trackInterval = null;
+        let routeLayer; 
+        let isTrackMapInitialized, 
+            isPlaceMapInitialized,
+            isServiceMapInitialized,
+            isBusMapInitialized = false;
+        const categories = {
+            "hotel": ["tourism", "hotel"],
+            "hospital": ["amenity", "hospital"],
+            "police": ["amenity", "police"],
+            "restaurant": ["amenity", "restaurant"],
+            "cafe": ["amenity", "cafe"],
+            "supermarket": ["shop", "supermarket"],
+            "fuel": ["amenity", "fuel"],
+            "pharmacy": ["amenity", "pharmacy"],
+            "bank": ["amenity", "bank"],
+            "atm": ["amenity", "atm"],
+            "library": ["amenity", "library"],
+            "cinema": ["amenity", "cinema"],
+            "park": ["leisure", "park"],
+            "university": ["amenity", "university"],
+            "school": ["amenity", "school"],
+            "theatre": ["amenity", "theatre"],
+            "post_office": ["amenity", "post_office"],
+            "bus_station": ["public_transport", "station"],
+            "train_station": ["railway", "station"],
+            "airport": ["aeroway", "aerodrome"]
+        };
+
+
+        function toggleSidebar() {
+            let sidebar = document.getElementById("sidebar");
+            let mainContent = document.getElementById("main");
+                
+            if (sidebar.classList.contains("closed")) {
+                sidebar.classList.remove("closed");
+                mainContent.classList.remove("collapsed");
+            } else {
+                sidebar.classList.add("closed");
+                mainContent.classList.add("collapsed");
+            }
+        }
+        function toggleMap() {
+            let mapContainer = document.getElementById('map');
+            let button = document.querySelector(".map-button1");
+
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                mapContainer.style.height = "90vh";
+                button.innerHTML = "🔽 Minimize";
+            } else {
+                mapContainer.style.height = "300px";
+                button.innerHTML = "🔍 Expand";
+            }
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500);
+        }
+        function togglePlaceMap() {
+            let mapContainer = document.getElementById('places-map');
+            let button = document.querySelector(".map-button2");
+
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                mapContainer.style.height = "90vh";
+                button.innerHTML = "🔽 Minimize";
+            } else {
+                mapContainer.style.height = "300px";
+                button.innerHTML = "🔍 Expand";
+            }
+
+            setTimeout(() => {
+                placesMap.invalidateSize();
+            }, 500);
+        }
+
+        function initMaps() {
+            map = L.map('map').setView([11.0168, 76.9558], 10); 
+        
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+        }
+        function initPlaceMap() {
+            placesMap = L.map("places-map").setView([11.0168, 76.9558], 10);
+            
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+            }).addTo(placesMap);
+        }
+        function initTrackMap() {
+            trackMap = L.map("track-map").setView([11.0168, 76.9558], 10);
+            
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+            }).addTo(trackMap);
+        }
+        function initBusMap() {
+            busMap = L.map("bus-stop-map").setView([11.0168, 76.9558], 10);
+            
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+            }).addTo(busMap);
+        }
+
+        function showPanel(panelId) {
+            document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
+            document.getElementById(panelId).classList.add("active");
+            
+            if (panelId == 'service-panel'){
+                if (!isServiceMapInitialized){
+                    setTimeout(() => {initMaps();}, 1000);
+                    isServiceMapInitialized = true;
+                }
+
+           }
+        }
+        function toggleNestedPanel(panelId) {
+           let panel = document.getElementById(panelId);
+           panel.classList.toggle("active");
+
+           if (panelId == "place-hotel-panel"){
+            if (!isPlaceMapInitialized){
+                const categoryDropdown = document.getElementById("category-dropdown");
+                Object.keys(categories).forEach(category => {
+                    let option = document.createElement("option");
+                    option.value = category;
+                    option.textContent = category.replace(/_/g, " ").toUpperCase(); 
+                    categoryDropdown.appendChild(option);
+                });
+                setTimeout(() => {initPlaceMap();}, 1000);
+                isPlaceMapInitialized = true;
+            }
+           }
+           if (panelId == "track-bus-panel"){
+            if (!isTrackMapInitialized){
+                setTimeout(() => {initTrackMap();}, 1000);
+                isTrackMapInitialized = true;
+            }
+           }
+           if (panelId == "bus-stop-panel"){
+            if (!isBusMapInitialized){
+                setTimeout(() => {initBusMap();}, 1000);
+                isBusMapInitialized = true;
+            }
+           }
+        }
+
+        function addMarker(lat, lng, title, type) {
+            let marker = L.marker([lat, lng]).addTo(map).bindPopup(title).openPopup();
+            
+            if (type === "source") {
+                if (sourceMarker) map.removeLayer(sourceMarker);
+                sourceMarker = marker;
+            } else if (type === "destination") {
+                if (destinationMarker) map.removeLayer(destinationMarker);
+                destinationMarker = marker;
+            }
+        
+            map.setView([lat, lng], 12);
+            map.invalidateSize();
+        }
+        
+        function getLiveLocation() {
+           if (navigator.geolocation) {
+               navigator.geolocation.getCurrentPosition(
+                   function (position) {
+                       var lat = position.coords.latitude;
+                       var lng = position.coords.longitude;
+                       document.getElementById("source").value = `Lat: ${lat}, Lng: ${lng}`;
+                       addMarker(lat, lng, "Source Location", "source");
+                   },
+                   function (error) {
+                       let message = "";
+                       switch (error.code) {
+                           case error.PERMISSION_DENIED:
+                               message = "User denied location access. Please allow location permission.";
+                               break;
+                           case error.POSITION_UNAVAILABLE:
+                               message = "Location information is unavailable.";
+                               break;
+                           case error.TIMEOUT:
+                               message = "The request to get location timed out.";
+                               break;
+                           case error.UNKNOWN_ERROR:
+                               message = "An unknown error occurred.";
+                               break;
+                       }
+                       alert(message);
+                   },
+                   { timeout: 10000 } // Increase timeout to 10 seconds
+               );
+           } else {
+               alert('Geolocation is not supported by this browser.');
+           }        
+        }
+        
+        function openMapForDestination() {
+            alert("Click on the map to select your destination.");
+            map.off('click');
+            map.on('click', function (e) {
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+                document.getElementById('destination').value = `Lat: ${lat}, Lng: ${lng}`;
+                addMarker(lat, lng, "Destination Selected", "destination");
+            });
+        }
+        function openMapForSource() {
+            alert("Click on the map to select your Source.");
+            map.off('click');
+            map.on('click', function (e) {
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+                document.getElementById('source').value = `Lat: ${lat}, Lng: ${lng}`;
+                addMarker(lat, lng, "Source Selected", "source");
+            });
+        }
+        function FindRoute() {
+            let source = document.getElementById("source").value;
+            let destination = document.getElementById("destination").value;
+        
+            if (!source || !destination) {
+                alert("Please select both source and destination!");
+                return;
+            }
+        
+            let [sourceLat, sourceLng] = source.replace("Lat: ", "").replace("Lng: ", "").split(", ");
+            let [destLat, destLng] = destination.replace("Lat: ", "").replace("Lng: ", "").split(", ");
+        
+            let osrmUrl = `http://router.project-osrm.org/route/v1/driving/${sourceLng},${sourceLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+        
+            fetch(osrmUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code !== "Ok") {
+                        alert("Error fetching route!");
+                        return;
+                    }
+                
+                    let route = data.routes[0];
+                    let distance = (route.distance / 1000).toFixed(2); 
+                    let duration = Math.ceil(route.duration / 60); 
+                
+                    if (routeLayer) {
+                        map.removeLayer(routeLayer);
+                    }
+                
+                    // Draw Route
+                    routeLayer = L.geoJSON(route.geometry, {
+                        style: { color: "blue", weight: 2 }
+                    }).addTo(map);
+                
+                    document.getElementById("routeDetails").innerHTML = `
+                        <p>🚗 Distance: <strong>${distance} km</strong></p>
+                        <p>⏳ Estimated Time: <strong>${duration} min</strong></p>
+                    `;
+                
+                    map.fitBounds(routeLayer.getBounds());
+                })
+                .catch(error => {
+                    console.error("Error fetching route:", error);
+                    alert("Failed to fetch route. Try again.");
+                });
+        }
+
+        function clearMarkers() {
+            markers.forEach(marker => placesMap.removeLayer(marker));
+            markers = [];
+        }
+
+        function findNearbyPlaces() {
+            let category = document.getElementById("category-dropdown").value;
+            let radius = document.getElementById("radius-dropdown").value * 1000;
+            let resultsDiv = document.getElementById("places-results"); // Result container
+
+            if (!category) {
+                resultsDiv.innerHTML = `<p style="color: red;">⚠️ Please select a category.</p>`;
+                return;
+            }
+        
+            let [osmKey, osmValue] = categories[category];
+        
+            if (!navigator.geolocation) {
+                resultsDiv.innerHTML = `<p style="color: red;">⚠️ Geolocation is not supported by this browser.</p>`;
+                return;
+            }
+        
+            // Show "Loading..." message
+            resultsDiv.innerHTML = `<p style="color: blue;">⏳ Loading nearby ${osmValue.replace(/_/g, " ")}...</p>`;
+        
+            navigator.geolocation.getCurrentPosition(position => {
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
+            
+                let overpassQuery = `
+                    [out:json];
+                    node(around:${radius},${lat},${lng})["${osmKey}"="${osmValue}"];
+                    out;`;
+            
+                let overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+            
+                fetch(overpassUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Fetched Data:", data);
+                    
+                        // Clear previous markers
+                        placesMap.eachLayer(layer => {
+                            if (layer instanceof L.Marker) placesMap.removeLayer(layer);
+                        });
+                    
+                        // Mark user's current location in green
+                        L.marker([lat, lng], {
+                            icon: L.icon({
+                                iconUrl: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+                                iconSize: [55, 55]
+                            })
+                        }).addTo(placesMap).bindPopup("📍 You are here");
+                    
+                        let places = data.elements;
+                        if (places.length === 0) {
+                            resultsDiv.innerHTML = `<p style="color: orange;">⚠️ No ${osmValue.replace(/_/g, " ")} found within the selected range.</p>`;
+                            return;
+                        }
+                    
+                        // Update results & show markers
+                        resultsDiv.innerHTML = `<p style="color: green;">✅ Found ${places.length} nearby ${osmValue.replace(/_/g, " ")}.</p>`;
+                        places.forEach(place => {
+                            let marker = L.marker([place.lat, place.lon]).addTo(placesMap);
+
+                            marker.bindPopup(`<strong>📍 ${osmValue.replace(/_/g, " ")}</strong>`);
+
+                            marker.on("mouseover", function () {
+                                this.openPopup();
+                            });
+
+                            marker.on("click", function () {
+                                this.openPopup();
+                            });
+                        });
+
+                        placesMap.setView([lat, lng], 14);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching places:", error);
+                        resultsDiv.innerHTML = `<p style="color: red;">❌ Error fetching places. Please try again later.</p>`;
+                    });
+                
+            }, error => {
+                resultsDiv.innerHTML = `<p style="color: red;">❌ Error getting location: ${error.message}</p>`;
+            });
+        }
+
+
+        function fetchBusLocation() {
+    fetch("/get_location")
+        .then(response => response.json())
+        .then(data => {
+            if (!data.latitude || !data.longitude) {
+                console.log("Bus location not available");
+                return;
+            }
+
+            console.log(`📍 Bus Location: Lat ${data.latitude}, Lng ${data.longitude}, Direction: ${data.direction}`);
+
+            // Create a custom FontAwesome marker using DivIcon
+            let busIcon = L.divIcon({
+                className: 'custom-bus-icon',
+                html: '<i class="fa-solid fa-location-arrow" style="font-size: 30px; color: red;"></i>',
+                iconSize: [30, 30],  // Size of the icon
+                iconAnchor: [15, 15]  // Centered icon
+            });
+
+            if (!trackBusMarker) {
+                trackBusMarker = L.marker([data.latitude, data.longitude], { icon: busIcon }).addTo(trackMap);
+            } else {
+                trackBusMarker.setLatLng([data.latitude, data.longitude]);
+            }
+
+            trackMap.setView([data.latitude, data.longitude]);
+
+            // Bind popup, but show only on hover
+            trackBusMarker
+                .bindPopup(
+                    `<b>🚌 Live Location</b><br>Lat: ${data.latitude}, Lng: ${data.longitude}<br>Direction: ${data.direction}`
+                )
+                .on('mouseover', function (e) {
+                    this.openPopup();
+                })
+                .on('mouseout', function (e) {
+                    this.closePopup();
+                });
+        })
+        .catch(error => {
+            console.error("Error fetching bus location:", error);
+        });
+}
+
+
+        function startTracking() {
+            fetchBusLocation();
+        
+            if (!trackInterval) {  
+                console.log("✅ Live tracking started...");
+                document.getElementById("startTracking").style.display = "none";
+                document.getElementById("stopTracking").style.display = "inline-block";
+                trackInterval = setInterval(fetchBusLocation, 3000);
+            }
+        }
+        function stopTracking() {
+            if (trackInterval) {
+                clearInterval(trackInterval);
+                trackInterval = null;
+                console.log("⛔ Live tracking stopped.");
+            
+                document.getElementById("startTracking").style.display = "inline-block";
+                document.getElementById("stopTracking").style.display = "none";
+            }
+        }
+
+        function searchBusStop() {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by this browser.");
+        return;
+    }
+
+    let loadingMessage = document.getElementById("bus-stop-results-status");
+    loadingMessage.innerText = "🔍 Searching for nearby bus stops... ⏳";
+    loadingMessage.style.display = "block";  
+    loadingMessage.style.color = "blue"; // Indicate loading in blue
+
+    navigator.geolocation.getCurrentPosition(function (position) {
+        let lat = position.coords.latitude;
+        let lng = position.coords.longitude;
+        let distance = document.getElementById("circumstance-dropdown").value * 1000; // Convert km to meters
+    
+        let overpassQuery = `
+            [out:json];
+            node(around:${distance},${lat},${lng})["highway"="bus_stop"];
+            out;`;
+    
+        let overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+    
+        fetch(overpassUrl)
+            .then(response => response.json())
+            .then(data => {
+                // Remove old markers
+                busMap.eachLayer(layer => {
+                    if (layer instanceof L.Marker) busMap.removeLayer(layer);
+                });
+            
+                console.log("Bus Stop Data:", data);
+            
+                let busStops = data.elements;
+                if (busStops.length === 0) {
+                    loadingMessage.innerText = "❌ No bus stops found in this range!";
+                    loadingMessage.style.color = "red"; // Indicate no results in red
+                    return;
+                }
+            
+                // ✅ Success: Update feedback message
+                loadingMessage.innerText = `✅ Found ${busStops.length} bus stops!`;
+                loadingMessage.style.color = "green"; // Indicate success in green
+            
+                // Mark the user's current location in GREEN
+                L.marker([lat, lng], {
+                    icon: L.icon({
+                        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                        iconSize: [55, 55]
+                    })
+                }).addTo(busMap).bindPopup("<b>📍 Your Location</b>").openPopup();
+                
+                busStops.forEach(stop => {
+                    let busStopName = stop.tags.name || "Unnamed Bus Stop";
+                                        
+                    L.marker([stop.lat, stop.lon])
+                        .addTo(busMap)
+                        .bindPopup(`<b>🚌 ${busStopName}</b><br>📍 ${stop.lat}, ${stop.lon}`)
+                        .on('mouseover', function () {
+                            this.openPopup();
+                        })
+                        .on('click', function () {
+                            this.openPopup();
+                        });
+                });
+            
+                busMap.setView([lat, lng], 14);
+                
+                // Populate the bus stop dropdown
+                populateBusStopDropdown(busStops);
+            })
+            .catch(error => {
+                console.error("Error fetching bus stops:", error);
+                loadingMessage.innerText = "⚠️ Error loading bus stops!";
+                loadingMessage.style.color = "red"; // Indicate error in red
+            });
+    }, function (error) {
+        alert("Error getting location: " + error.message);
+        loadingMessage.innerText = "⚠️ Location access denied!";
+        loadingMessage.style.color = "red"; // Indicate error in red
+    });
+}
+
+
+function fetchBusTimings() {
+    let dropdown = document.getElementById("bus-stop-dropdown");
+    let selectedOption = dropdown.value;
+
+    if (!selectedOption) {
+        alert("Please select a bus stop first!");
+        return;
+    }
+
+    let stopData = JSON.parse(selectedOption);
+    let numSchedules = Math.floor(Math.random() * 3) + 2; // 2 to 4 timings per stop
+    let busTimings = [];
+
+    for (let i = 0; i < numSchedules; i++) {
+        let hour = Math.floor(Math.random() * 12) + 1; // 1 to 12
+        let minute = Math.floor(Math.random() * 60); // 0 to 59
+        let ampm = Math.random() > 0.5 ? "AM" : "PM";
+
+        let departureOffset = Math.floor(Math.random() * 9) + 2; // Departure is 2-10 min later
+        let departureMinute = (minute + departureOffset) % 60;
+        let departureHour = hour + Math.floor((minute + departureOffset) / 60); // Adjust hour if minutes overflow
+
+        // Ensure hour stays within 12-hour format
+        if (departureHour > 12) {
+            departureHour = 1;
+        }
+
+        let arrivalTime = `${hour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+        let departureTime = `${departureHour}:${departureMinute.toString().padStart(2, '0')} ${ampm}`;
+
+        busTimings.push({ arrival: arrivalTime, departure: departureTime });
+    }
+
+    let scheduleDisplay = `<h4>🚌 Bus Timings for: <b>${stopData.name}</b></h4><ul>`;
+    busTimings.forEach(timing => {
+        scheduleDisplay += `<li>🚏 Arrival: ${timing.arrival} | 🏁 Departure: ${timing.departure}</li>`;
+    });
+    scheduleDisplay += `</ul>`;
+
+    document.getElementById("bus-schedule-display").innerHTML = scheduleDisplay;
+}
+
+function populateBusStopDropdown(busStops) {
+    let dropdown = document.getElementById("bus-stop-dropdown");
+    dropdown.innerHTML = ""; // Clear previous options
+
+    if (busStops.length === 0) {
+        dropdown.innerHTML = "<option value=''>No bus stops found</option>";
+        return;
+    }
+
+    busStops.forEach(stop => {
+        let option = document.createElement("option");
+        option.value = JSON.stringify({ name: stop.tags.name || "Unnamed Bus Stop", lat: stop.lat, lon: stop.lon });
+        option.textContent = stop.tags.name || `Bus Stop (${stop.lat.toFixed(3)}, ${stop.lon.toFixed(3)})`;
+        dropdown.appendChild(option);
+    });
+}
+
+
+        
+        </script>
+        
+
+</body>
+</html>

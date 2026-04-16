@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Sharing</title>
+</head>
+<body>
+    <h2>📍 Sharing Live Location...</h2>
+    <p id="status">Waiting for location permission...</p>
+
+    <script>
+        function startLocationSharing() {
+            if (!navigator.geolocation) {
+                document.getElementById("status").innerText = "Geolocation not supported!";
+                return;
+            }
+
+            navigator.geolocation.watchPosition(position => {
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
+                let speed = position.coords.speed || 0; // Speed in meters/second
+                let heading = position.coords.heading || "N/A"; // Direction (in degrees)
+
+                document.getElementById("status").innerText = `Lat: ${lat}, Lng: ${lng}, Speed: ${speed} m/s, Direction: ${heading}`;
+
+                // Send location to Flask server
+                fetch("/update_location", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        latitude: lat,
+                        longitude: lng,
+                        direction: heading
+                    })
+                }).catch(err => console.error("Error sending location:", err));
+
+            }, error => {
+                console.error("GPS error:", error);
+                document.getElementById("status").innerText = "Failed to get location.";
+            }, {
+                enableHighAccuracy: true,  
+                maximumAge: 0, 
+                timeout: 5000 
+            });
+        }
+
+        startLocationSharing();
+    </script>
+</body>
+</html>
