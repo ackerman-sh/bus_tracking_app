@@ -6,7 +6,11 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Required for session management
 
 # 🔹 Initialize Flask-SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading"
+)
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
