@@ -607,7 +607,7 @@
             let [sourceLat, sourceLng] = source.replace("Lat: ", "").replace("Lng: ", "").split(", ");
             let [destLat, destLng] = destination.replace("Lat: ", "").replace("Lng: ", "").split(", ");
         
-            let osrmUrl = `http://router.project-osrm.org/route/v1/driving/${sourceLng},${sourceLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+            let osrmUrl = `https://router.project-osrm.org/route/v1/driving/${sourceLng},${sourceLat};${destLng},${destLat}?overview=full&geometries=geojson`;
         
             fetch(osrmUrl)
                 .then(response => response.json())
